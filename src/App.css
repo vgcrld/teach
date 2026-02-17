@@ -1,0 +1,148 @@
+.app {
+  min-height: 100vh;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.app-header {
+  text-align: center;
+}
+
+.app-header h1 {
+  font-size: 2rem;
+  margin: 0;
+  color: #2d3748;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.instructions {
+  margin: 0.5rem 0 0;
+  font-size: 1rem;
+  color: #5a6778;
+  max-width: 400px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.score-board {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+
+.app-main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  width: 100%;
+}
+
+.staff-section {
+  width: 100%;
+  max-width: 600px;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-radius: 12px;
+  padding: 1rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.grand-staff-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  border-radius: 8px;
+}
+
+.grand-staff-wrapper .grand-staff {
+  display: block;
+  min-width: 100%;
+  color: #334155;
+}
+
+.piano-section {
+  width: 100%;
+  max-width: 600px;
+}
+
+/* ScoreBoard styles */
+.score-stats {
+  display: flex;
+  gap: 1.25rem;
+}
+
+.score-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.5rem 0.75rem;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.score-label {
+  font-size: 0.75rem;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.score-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #2d3748;
+}
+
+.score-item.streak .score-value {
+  color: #e67e22;
+}
+
+.feedback {
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 1rem;
+  animation: feedback-pop 0.3s ease;
+}
+
+.feedback.correct {
+  background: linear-gradient(135deg, #86efac 0%, #4ade80 100%);
+  color: #166534;
+}
+
+.feedback.wrong {
+  background: linear-gradient(135deg, #fca5a5 0%, #f87171 100%);
+  color: #991b1b;
+}
+
+@keyframes feedback-pop {
+  0% {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@media (min-width: 640px) {
+  .app-header h1 {
+    font-size: 2.5rem;
+  }
+
+  .instructions {
+    font-size: 1.1rem;
+  }
+}

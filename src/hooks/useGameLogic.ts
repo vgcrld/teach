@@ -33,6 +33,13 @@ export function useGameLogic() {
   const currentNote =
     firstUnansweredIndex >= 0 ? notes[firstUnansweredIndex].note : null;
 
+  // Sync keyboard octave to current note so staff and piano align
+  useEffect(() => {
+    if (currentNote && currentNote.octave >= 3 && currentNote.octave <= 5) {
+      setKeyboardOctave(currentNote.octave as 3 | 4 | 5);
+    }
+  }, [currentNote]);
+
   const appendNote = useCallback(() => {
     setNotes((prev) => {
       const next = [...prev, { note: getRandomNotes(1)[0], answered: false }];

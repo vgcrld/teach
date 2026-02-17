@@ -87,27 +87,36 @@ function getLedgerLines(note: Note): number[] {
   return lines;
 }
 
-// Sharp symbol: two verticals + two diagonals (slash and backslash crossing)
-function SharpSymbol({ x }: { x: number }) {
-  const w = 4.5;
-  const h = 7;
+const SHARP = '\u266F'; // ♯
+const FLAT = '\u266D';  // ♭
+
+function Accidental({ x, type, color }: { x: number; type: 'sharp' | 'flat'; color?: string }) {
+  const symbol = type === 'sharp' ? SHARP : FLAT;
   return (
-    <g transform={`translate(${x}, 0)`} stroke="currentColor" strokeWidth="1.6" fill="none" strokeLinecap="round">
-      <line x1={0} y1={-h} x2={0} y2={h} />
-      <line x1={-w} y1={-h} x2={-w} y2={h} />
-      <line x1={-w} y1={-2} x2={0} y2={3} />
-      <line x1={-w} y1={2} x2={0} y2={-3} />
-    </g>
+    <text
+      x={x}
+      y={0}
+      fontSize={28}
+      fontFamily="'Noto Music', sans-serif"
+      fill={color ?? 'currentColor'}
+      textAnchor="end"
+      dominantBaseline="central"
+      style={{ fontVariant: 'normal' }}
+    >
+      {symbol}
+    </text>
   );
 }
 
-function SingleNote({ note, x }: { note: Note; x: number }) {
+function SingleNote({ note, x, isCurrent }: { note: Note; x: number; isCurrent?: boolean }) {
   const noteY = getNoteY(note);
   const stemUp = note.clef === 'treble' ? noteY >= 94 : noteY >= 194;
   const stemLength = 42;
   const hasSharp = note.name.includes('#');
+  const hasFlat = note.name.includes('b');
 
-  const ledgerLeft = hasSharp ? x - 22 : x - LEDGER_LENGTH;
+  const accidentalWidth = (hasSharp || hasFlat) ? 18 : 0;
+  const ledgerLeft = (hasSharp || hasFlat) ? x - accidentalWidth : x - LEDGER_LENGTH;
   const ledgerRight = x + LEDGER_LENGTH;
 
   return (
@@ -124,14 +133,15 @@ function SingleNote({ note, x }: { note: Note; x: number }) {
         />
       ))}
       <g transform={`translate(${x}, ${noteY})`}>
-        {hasSharp && <SharpSymbol x={-10} />}
-        <ellipse cx={0} cy={0} rx={8} ry={6} fill="currentColor" />
+        {hasSharp && <Accidental x={-10} type="sharp" color={isCurrent ? '#16a34a' : undefined} />}
+        {hasFlat && <Accidental x={-10} type="flat" color={isCurrent ? '#16a34a' : undefined} />}
+        <ellipse cx={0} cy={0} rx={8} ry={6} fill={isCurrent ? '#16a34a' : 'currentColor'} />
         <line
           x1={stemUp ? 8 : -8}
           y1={0}
           x2={stemUp ? 8 : -8}
           y2={stemUp ? -stemLength : stemLength}
-          stroke="currentColor"
+          stroke={isCurrent ? '#16a34a' : 'currentColor'}
           strokeWidth="2"
         />
       </g>
@@ -188,6 +198,7 @@ export function GrandStaff({ notes }: GrandStaffProps) {
             y2={TREBLE_TOP_Y + i * LINE_SPACING}
             stroke="currentColor"
             strokeWidth="1.5"
+            strokeOpacity={0.45}
           />
         ))}
 
@@ -201,6 +212,7 @@ export function GrandStaff({ notes }: GrandStaffProps) {
             y2={BASS_TOP_Y + i * LINE_SPACING}
             stroke="currentColor"
             strokeWidth="1.5"
+            strokeOpacity={0.45}
           />
         ))}
 
@@ -247,11 +259,18 @@ export function GrandStaff({ notes }: GrandStaffProps) {
           {BASS_CLEF}
         </text>
 
-        {/* 4/4 time signature (between staves) */}
-        <g fontFamily="'Noto Music', sans-serif" fill="currentColor" fontSize={22} textAnchor="middle">
-          <text x={TIME_SIG_X} y={132} dominantBaseline="alphabetic">4</text>
-          <text x={TIME_SIG_X} y={152} dominantBaseline="hanging">4</text>
-        </g>
+        {/* 4/4 time signature - Common Time symbol (C) */}
+        <text
+          x={TIME_SIG_X}
+          y={144}
+          fontSize={52}
+          fontFamily="'Noto Music', sans-serif"
+          fill="currentColor"
+          textAnchor="middle"
+          dominantBaseline="central"
+        >
+          {'\u{1D134}'}
+        </text>
 
         {/* Bar lines */}
         {barLineXCoords.map((x, i) => (
@@ -267,15 +286,18 @@ export function GrandStaff({ notes }: GrandStaffProps) {
         ))}
 
         {/* Notes - left to right */}
-        {notes.map(({ note, answered }, i) => (
-          <g
-            key={i}
-            className={answered ? 'note-answered' : 'note-current'}
-            style={{ opacity: answered ? 0.7 : 1 }}
-          >
-            <SingleNote note={note} x={getNoteX(i)} />
-          </g>
-        ))}
+        {notes.map(({ note, answered }, i) => {
+          const isCurrent = firstUnansweredIndex >= 0 && i === firstUnansweredIndex;
+          return (
+            <g
+              key={i}
+              className={answered ? 'note-answered' : 'note-current'}
+              style={{ opacity: answered ? 0.7 : 1 }}
+            >
+              <SingleNote note={note} x={getNoteX(i)} isCurrent={isCurrent} />
+            </g>
+          );
+        })}
       </svg>
     </div>
   );

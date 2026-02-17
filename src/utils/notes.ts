@@ -34,13 +34,8 @@ const TREBLE_NOTES: Note[] = [
   { name: 'A#', octave: 5, staffPosition: 10, clef: 'treble' },
 ];
 
-// Bass clef: naturals and sharps, G2 through C4
+// Bass clef: naturals and sharps, C3 through C4 (matches piano range)
 const BASS_NOTES: Note[] = [
-  { name: 'G', octave: 2, staffPosition: 0, clef: 'bass' },
-  { name: 'G#', octave: 2, staffPosition: 0, clef: 'bass' },
-  { name: 'A', octave: 2, staffPosition: 1, clef: 'bass' },
-  { name: 'A#', octave: 2, staffPosition: 1, clef: 'bass' },
-  { name: 'B', octave: 2, staffPosition: 2, clef: 'bass' },
   { name: 'C', octave: 3, staffPosition: 3, clef: 'bass' },
   { name: 'C#', octave: 3, staffPosition: 3, clef: 'bass' },
   { name: 'D', octave: 3, staffPosition: 4, clef: 'bass' },

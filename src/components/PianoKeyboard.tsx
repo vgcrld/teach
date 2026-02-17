@@ -9,18 +9,18 @@ const BLACK_KEYS = ['C#', 'D#', 'F#', 'G#', 'A#'] as const;
 const KEY_ID_TO_PC_KEY: Record<string, string> = {
   C3: 'a', D3: 's', E3: 'd', F3: 'f', G3: 'g', A3: 'h', B3: 'j',
   C4: 'a', D4: 's', E4: 'd', F4: 'f', G4: 'g', A4: 'h', B4: 'j',
-  C5: 'a', D5: 's', E5: 'd', F5: 'f',
+  C5: 'a', D5: 's', E5: 'd', F5: 'f', G5: 'g', A5: 'h', B5: 'j',
   'C#3': 'w', 'D#3': 'e', 'F#3': 'r', 'G#3': 't', 'A#3': 'y',
   'C#4': 'w', 'D#4': 'e', 'F#4': 'r', 'G#4': 't', 'A#4': 'y',
-  'C#5': 'w', 'D#5': 'e',
+  'C#5': 'w', 'D#5': 'e', 'F#5': 'r', 'G#5': 't', 'A#5': 'y',
 };
 const BLACK_KEY_POS_IN_OCTAVE = [0, 1, 3, 4, 5] as const; // 1/7, 2/7, 4/7, 5/7, 6/7 of octave width
 
-// Octave 3: 7 keys, Octave 4: 7 keys, Octave 5: 4 keys
+// All 3 octaves have full 7 white + 5 black keys
 const OCTAVE_CONFIG = [
   { octave: 3, keys: [...WHITE_KEYS] },
   { octave: 4, keys: [...WHITE_KEYS] },
-  { octave: 5, keys: ['C', 'D', 'E', 'F'] as const },
+  { octave: 5, keys: [...WHITE_KEYS] },
 ];
 
 interface PianoKeyboardProps {
@@ -69,7 +69,7 @@ export function PianoKeyboard({ onKeyPress, feedbackKey, feedbackType, activeOct
     <div className="piano-keyboard" role="group" aria-label="Piano keyboard">
       <div className="piano-inner">
         {OCTAVE_CONFIG.map(({ octave, keys }) => (
-          <div key={octave} className={`piano-octave ${keys.length === 4 ? 'short' : ''}`}>
+          <div key={octave} className="piano-octave">
             <div className="white-key-row">
               {keys.map((name) => {
                 const fullName = `${name}${octave}`;
@@ -90,10 +90,9 @@ export function PianoKeyboard({ onKeyPress, feedbackKey, feedbackType, activeOct
               })}
             </div>
             <div className="black-key-row">
-              {(keys.length === 7 ? BLACK_KEYS : ['C#', 'D#']).map((keyName, i) => {
-                const keyCount = keys.length;
-                const boundaryNum = keyCount === 7 ? BLACK_KEY_POS_IN_OCTAVE[i] + 1 : i + 1;
-                const denominator = keyCount;
+              {BLACK_KEYS.map((keyName, i) => {
+                const boundaryNum = BLACK_KEY_POS_IN_OCTAVE[i] + 1;
+                const denominator = 7;
                 const fullName = `${keyName}${octave}`;
                 const pcKey = KEY_ID_TO_PC_KEY[fullName];
                 return (

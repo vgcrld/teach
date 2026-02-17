@@ -21,9 +21,6 @@ function App() {
       <ScoreBoard score={score} streak={streak} feedback={feedback} />
       <header className="app-header">
         <h1>Grand Staff Training</h1>
-        <p className="instructions">
-          Find the note on the staff! Click a piano key or use keyboard: asdfghj (white), werty (black). Press <kbd>Shift</kbd> to cycle octave <span className="octave-badge" aria-live="polite">{keyboardOctave === 3 ? '3' : keyboardOctave === 4 ? '4' : '5'}</span>. Press ? to toggle key labels. Includes naturals and sharps (♯).
-        </p>
         <button type="button" className="start-over-btn" onClick={startOver}>
           Start Over
         </button>

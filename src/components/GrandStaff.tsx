@@ -10,16 +10,34 @@ interface GrandStaffProps {
   notes: StaffNote[];
 }
 
-// Layout constants
+// Layout: left-to-right = brace | clef | time sig | bar | [measure: 4 notes] | bar | ...
 const VIEWBOX_HEIGHT = 320;
-const STAFF_LEFT = 16;
-const CLEF_X = 52;
-const CLEF_SIZE = 64;
+const STAFF_LEFT = 20;
+const CLEF_X = 48;
+const CLEF_SIZE = 60;
+const TIME_SIG_X = 78;
+const FIRST_BAR_X = 92;
+const MEASURE_WIDTH = 200; // each 4/4 measure
+const NOTES_PER_MEASURE = 4;
 const LINE_SPACING = 12;
-const FIRST_NOTE_X = 105;
-const NOTE_SPACING = 52;
 const LEDGER_LENGTH = 14;
 const STAFF_EXTEND = 60;
+
+// Notes at 1/8, 3/8, 5/8, 7/8 of measure width (evenly spaced with margins)
+const NOTE_OFFSETS_IN_MEASURE = [1 / 8, 3 / 8, 5 / 8, 7 / 8].map(
+  (f) => f * MEASURE_WIDTH
+);
+
+function getNoteX(index: number): number {
+  const measureIndex = Math.floor(index / NOTES_PER_MEASURE);
+  const noteInMeasure = index % NOTES_PER_MEASURE;
+  const measureStart = FIRST_BAR_X + measureIndex * MEASURE_WIDTH;
+  return measureStart + NOTE_OFFSETS_IN_MEASURE[noteInMeasure];
+}
+
+function getBarLineX(measureIndex: number): number {
+  return FIRST_BAR_X + measureIndex * MEASURE_WIDTH;
+}
 
 // Treble staff: lines at y 70, 82, 94, 106, 118 (bottom line = E4 = pos 0)
 const TREBLE_BOTTOM_Y = 118;
@@ -122,22 +140,35 @@ function SingleNote({ note, x }: { note: Note; x: number }) {
 }
 
 export function GrandStaff({ notes }: GrandStaffProps) {
+  const measureCount = Math.ceil(notes.length / NOTES_PER_MEASURE) || 1;
+  const lastBarX = getBarLineX(measureCount);
   const contentRight = notes.length > 0
-    ? FIRST_NOTE_X + (notes.length - 1) * NOTE_SPACING + STAFF_EXTEND
-    : 600;
-  const viewBoxWidth = Math.max(600, contentRight);
-  const staffRight = viewBoxWidth - 16;
+    ? lastBarX + STAFF_EXTEND
+    : 400;
+  const viewBoxWidth = Math.max(500, contentRight);
+  const staffRight = viewBoxWidth - 20;
+
+  const barLineXCoords: number[] = [];
+  for (let m = 0; m <= measureCount; m++) {
+    barLineXCoords.push(getBarLineX(m));
+  }
 
   const svgHeight = 280;
   const svgWidth = (viewBoxWidth / VIEWBOX_HEIGHT) * svgHeight;
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const firstUnansweredIndex = notes.findIndex((n) => !n.answered);
 
   useEffect(() => {
     const el = wrapperRef.current;
-    if (el && notes.length > 0) {
+    if (!el || notes.length === 0) return;
+    const scale = svgWidth / viewBoxWidth;
+    if (firstUnansweredIndex >= 0) {
+      const noteX = getNoteX(firstUnansweredIndex);
+      el.scrollLeft = Math.max(0, noteX * scale - 40);
+    } else {
       el.scrollLeft = el.scrollWidth - el.clientWidth;
     }
-  }, [notes.length]);
+  }, [notes.length, firstUnansweredIndex, viewBoxWidth, svgWidth]);
 
   return (
     <div className="grand-staff-wrapper" ref={wrapperRef}>
@@ -175,16 +206,16 @@ export function GrandStaff({ notes }: GrandStaffProps) {
 
         {/* Straight vertical line connecting the two staves */}
         <line
-          x1={20}
+          x1={STAFF_LEFT}
           y1={TREBLE_TOP_Y}
-          x2={20}
+          x2={STAFF_LEFT}
           y2={BASS_BOTTOM_Y}
           stroke="currentColor"
           strokeWidth="1.5"
         />
         {/* Curly brace */}
         <path
-          d={`M 20 ${TREBLE_TOP_Y} C 4 ${TREBLE_TOP_Y}, 4 144, 20 144 C 4 144, 4 ${BASS_BOTTOM_Y}, 20 ${BASS_BOTTOM_Y}`}
+          d={`M ${STAFF_LEFT} ${TREBLE_TOP_Y} C 4 ${TREBLE_TOP_Y}, 4 144, ${STAFF_LEFT} 144 C 4 144, 4 ${BASS_BOTTOM_Y}, ${STAFF_LEFT} ${BASS_BOTTOM_Y}`}
           fill="none"
           stroke="currentColor"
           strokeWidth="2"
@@ -216,6 +247,25 @@ export function GrandStaff({ notes }: GrandStaffProps) {
           {BASS_CLEF}
         </text>
 
+        {/* 4/4 time signature (between staves) */}
+        <g fontFamily="'Noto Music', sans-serif" fill="currentColor" fontSize={22} textAnchor="middle">
+          <text x={TIME_SIG_X} y={132} dominantBaseline="alphabetic">4</text>
+          <text x={TIME_SIG_X} y={152} dominantBaseline="hanging">4</text>
+        </g>
+
+        {/* Bar lines */}
+        {barLineXCoords.map((x, i) => (
+          <line
+            key={i}
+            x1={x}
+            y1={TREBLE_TOP_Y}
+            x2={x}
+            y2={BASS_BOTTOM_Y}
+            stroke="currentColor"
+            strokeWidth={i === 0 ? "2" : "1.5"}
+          />
+        ))}
+
         {/* Notes - left to right */}
         {notes.map(({ note, answered }, i) => (
           <g
@@ -223,7 +273,7 @@ export function GrandStaff({ notes }: GrandStaffProps) {
             className={answered ? 'note-answered' : 'note-current'}
             style={{ opacity: answered ? 0.7 : 1 }}
           >
-            <SingleNote note={note} x={FIRST_NOTE_X + i * NOTE_SPACING} />
+            <SingleNote note={note} x={getNoteX(i)} />
           </g>
         ))}
       </svg>

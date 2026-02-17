@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { playNote } from '../utils/audio';
-import { getRandomNote, type Note } from '../utils/notes';
+import { getRandomNotes, type Note } from '../utils/notes';
 
 const CORRECT_DELAY_MS = 800;
+const INITIAL_NOTE_COUNT = 12; // enough to fill the staff
 
 // Base key -> note (octave comes from shift-toggle state)
 const WHITE_KEYS: Record<string, { noteName: string; note: string }> = {
@@ -28,12 +29,17 @@ export function useGameLogic() {
   const [keyboardOctave, setKeyboardOctave] = useState<3 | 4 | 5>(3); // shift cycles 3→4→5→3
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const currentNote = notes.length > 0 && !notes[notes.length - 1].answered
-    ? notes[notes.length - 1].note
-    : null;
+  const firstUnansweredIndex = notes.findIndex((n) => !n.answered);
+  const currentNote =
+    firstUnansweredIndex >= 0 ? notes[firstUnansweredIndex].note : null;
 
-  const pickNewNote = useCallback(() => {
-    setNotes((prev) => [...prev, { note: getRandomNote(), answered: false }]);
+  const appendNote = useCallback(() => {
+    setNotes((prev) => {
+      const next = [...prev, { note: getRandomNotes(1)[0], answered: false }];
+      // Trim from left to cap at ~24 notes
+      if (next.length > 24) return next.slice(next.length - 24);
+      return next;
+    });
     setFeedback(null);
     setFeedbackKey(null);
   }, []);
@@ -43,7 +49,9 @@ export function useGameLogic() {
       clearTimeout(timeoutRef.current);
       timeoutRef.current = null;
     }
-    setNotes([{ note: getRandomNote(), answered: false }]);
+    setNotes(
+      getRandomNotes(INITIAL_NOTE_COUNT).map((note) => ({ note, answered: false }))
+    );
     setScore(0);
     setStreak(0);
     setFeedback(null);
@@ -51,7 +59,9 @@ export function useGameLogic() {
   }, []);
 
   useEffect(() => {
-    setNotes([{ note: getRandomNote(), answered: false }]);
+    setNotes(
+      getRandomNotes(INITIAL_NOTE_COUNT).map((note) => ({ note, answered: false }))
+    );
   }, []);
 
   const checkAnswer = useCallback(
@@ -76,13 +86,14 @@ export function useGameLogic() {
         setFeedbackKey(feedbackKeyId);
         setNotes((prev) => {
           const next = [...prev];
-          next[next.length - 1] = { ...next[next.length - 1], answered: true };
+          const idx = next.findIndex((n) => !n.answered);
+          if (idx >= 0) next[idx] = { ...next[idx], answered: true };
           return next;
         });
 
         timeoutRef.current = setTimeout(() => {
           timeoutRef.current = null;
-          pickNewNote();
+          appendNote();
         }, CORRECT_DELAY_MS);
       } else {
         setStreak(0);
@@ -96,7 +107,7 @@ export function useGameLogic() {
         }, 600);
       }
     },
-    [currentNote, pickNewNote]
+    [currentNote, appendNote]
   );
 
   useEffect(() => {

@@ -63,3 +63,7 @@ export function getRandomNote(): Note {
   const index = Math.floor(Math.random() * ALL_NOTES.length);
   return ALL_NOTES[index];
 }
+
+export function getRandomNotes(count: number): Note[] {
+  return Array.from({ length: count }, () => getRandomNote());
+}

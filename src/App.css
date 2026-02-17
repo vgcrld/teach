@@ -25,9 +25,45 @@
   margin: 0.5rem 0 0;
   font-size: 1rem;
   color: #5a6778;
-  max-width: 400px;
+  max-width: 500px;
   margin-left: auto;
   margin-right: auto;
+}
+
+.instructions kbd {
+  padding: 0.15em 0.4em;
+  font-size: 0.9em;
+  background: #e2e8f0;
+  border-radius: 4px;
+  border: 1px solid #cbd5e1;
+}
+
+.octave-badge {
+  font-weight: 600;
+  color: #4f46e5;
+}
+
+.start-over-btn {
+  margin-top: 1rem;
+  padding: 0.5rem 1.25rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #fff;
+  background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.35);
+  transition: transform 0.1s, box-shadow 0.2s;
+}
+
+.start-over-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
+}
+
+.start-over-btn:active {
+  transform: translateY(0);
 }
 
 .score-board {
@@ -50,10 +86,10 @@
 
 .staff-section {
   width: 100%;
-  max-width: 600px;
+  max-width: 900px;
   background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
   border-radius: 12px;
-  padding: 1rem;
+  padding: 0.75rem;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
@@ -72,7 +108,7 @@
 
 .piano-section {
   width: 100%;
-  max-width: 600px;
+  max-width: 900px;
 }
 
 /* ScoreBoard styles */

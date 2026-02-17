@@ -12,22 +12,22 @@ interface GrandStaffProps {
 
 // Layout constants
 const VIEWBOX_HEIGHT = 320;
-const STAFF_LEFT = 20;
+const STAFF_LEFT = 16;
 const CLEF_X = 52;
 const CLEF_SIZE = 64;
 const LINE_SPACING = 12;
 const FIRST_NOTE_X = 105;
 const NOTE_SPACING = 52;
-const LEDGER_LENGTH = 24;
+const LEDGER_LENGTH = 14;
 const STAFF_EXTEND = 60;
 
-// Treble staff: lines at y 50, 62, 74, 86, 98 (bottom line = E4 = pos 0)
-const TREBLE_BOTTOM_Y = 98;
-const TREBLE_TOP_Y = 50;
+// Treble staff: lines at y 70, 82, 94, 106, 118 (bottom line = E4 = pos 0)
+const TREBLE_BOTTOM_Y = 118;
+const TREBLE_TOP_Y = 70;
 
-// Bass staff: lines at y 182, 194, 206, 218, 230
-const BASS_TOP_Y = 182;
-const BASS_BOTTOM_Y = 230;
+// Bass staff: lines at y 170, 182, 194, 206, 218
+const BASS_TOP_Y = 170;
+const BASS_BOTTOM_Y = 218;
 
 function getNoteY(note: Note): number {
   if (note.clef === 'treble') {
@@ -69,34 +69,54 @@ function getLedgerLines(note: Note): number[] {
   return lines;
 }
 
+// Sharp symbol: two verticals + two diagonals (slash and backslash crossing)
+function SharpSymbol({ x }: { x: number }) {
+  const w = 4.5;
+  const h = 7;
+  return (
+    <g transform={`translate(${x}, 0)`} stroke="currentColor" strokeWidth="1.6" fill="none" strokeLinecap="round">
+      <line x1={0} y1={-h} x2={0} y2={h} />
+      <line x1={-w} y1={-h} x2={-w} y2={h} />
+      <line x1={-w} y1={-2} x2={0} y2={3} />
+      <line x1={-w} y1={2} x2={0} y2={-3} />
+    </g>
+  );
+}
+
 function SingleNote({ note, x }: { note: Note; x: number }) {
   const noteY = getNoteY(note);
-  const stemUp = note.clef === 'treble' ? noteY >= 74 : noteY >= 206;
+  const stemUp = note.clef === 'treble' ? noteY >= 94 : noteY >= 194;
   const stemLength = 42;
-  const stemX = stemUp ? x + 8 : x - 8;
+  const hasSharp = note.name.includes('#');
+
+  const ledgerLeft = hasSharp ? x - 22 : x - LEDGER_LENGTH;
+  const ledgerRight = x + LEDGER_LENGTH;
 
   return (
     <g className="note-group">
       {getLedgerLines(note).map((y, i) => (
         <line
           key={i}
-          x1={x - LEDGER_LENGTH}
+          x1={ledgerLeft}
           y1={y}
-          x2={x + LEDGER_LENGTH}
+          x2={ledgerRight}
           y2={y}
           stroke="currentColor"
           strokeWidth="1.5"
         />
       ))}
-      <ellipse cx={x} cy={noteY} rx={8} ry={6} fill="currentColor" />
-      <line
-        x1={stemX}
-        y1={noteY}
-        x2={stemX}
-        y2={stemUp ? noteY - stemLength : noteY + stemLength}
-        stroke="currentColor"
-        strokeWidth="2"
-      />
+      <g transform={`translate(${x}, ${noteY})`}>
+        {hasSharp && <SharpSymbol x={-10} />}
+        <ellipse cx={0} cy={0} rx={8} ry={6} fill="currentColor" />
+        <line
+          x1={stemUp ? 8 : -8}
+          y1={0}
+          x2={stemUp ? 8 : -8}
+          y2={stemUp ? -stemLength : stemLength}
+          stroke="currentColor"
+          strokeWidth="2"
+        />
+      </g>
     </g>
   );
 }
@@ -106,9 +126,9 @@ export function GrandStaff({ notes }: GrandStaffProps) {
     ? FIRST_NOTE_X + (notes.length - 1) * NOTE_SPACING + STAFF_EXTEND
     : 600;
   const viewBoxWidth = Math.max(600, contentRight);
-  const staffRight = viewBoxWidth - 20;
+  const staffRight = viewBoxWidth - 16;
 
-  const svgHeight = 240;
+  const svgHeight = 280;
   const svgWidth = (viewBoxWidth / VIEWBOX_HEIGHT) * svgHeight;
   const wrapperRef = useRef<HTMLDivElement>(null);
 
@@ -153,12 +173,21 @@ export function GrandStaff({ notes }: GrandStaffProps) {
           />
         ))}
 
-        {/* Brace */}
+        {/* Straight vertical line connecting the two staves */}
+        <line
+          x1={20}
+          y1={TREBLE_TOP_Y}
+          x2={20}
+          y2={BASS_BOTTOM_Y}
+          stroke="currentColor"
+          strokeWidth="1.5"
+        />
+        {/* Curly brace */}
         <path
-          d="M 22 48 Q 18 140 22 232"
+          d={`M 20 ${TREBLE_TOP_Y} C 4 ${TREBLE_TOP_Y}, 4 144, 20 144 C 4 144, 4 ${BASS_BOTTOM_Y}, 20 ${BASS_BOTTOM_Y}`}
           fill="none"
           stroke="currentColor"
-          strokeWidth="2.5"
+          strokeWidth="2"
         />
 
         {/* Treble clef */}

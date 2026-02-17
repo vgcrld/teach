@@ -62,3 +62,11 @@ export function getRandomNote(): Note {
 export function getRandomNotes(count: number): Note[] {
   return Array.from({ length: count }, () => getRandomNote());
 }
+
+/** Create a Note for staff display from a piano key (noteName + octave) */
+export function noteFromPiano(noteName: string, octave: number): Note | null {
+  const found = ALL_NOTES.find(
+    (n) => n.name === noteName && n.octave === octave
+  );
+  return found ?? null;
+}

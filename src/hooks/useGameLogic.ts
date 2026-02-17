@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { playNote } from '../utils/audio';
-import { getRandomNotes, type Note } from '../utils/notes';
+import { getRandomNotes, noteFromPiano, type Note } from '../utils/notes';
 
 const CORRECT_DELAY_MS = 800;
 const INITIAL_NOTE_COUNT = 12; // enough to fill the staff
@@ -20,8 +20,11 @@ export type FeedbackType = 'correct' | 'wrong' | null;
 
 export type StaffNote = { note: Note; answered: boolean };
 
-export function useGameLogic() {
+const MAX_PLAY_NOTES = 32;
+
+export function useGameLogic(isPlayMode: boolean) {
   const [notes, setNotes] = useState<StaffNote[]>([]);
+  const [playedNotes, setPlayedNotes] = useState<StaffNote[]>([]);
   const [score, setScore] = useState(0);
   const [streak, setStreak] = useState(0);
   const [feedback, setFeedback] = useState<FeedbackType>(null);
@@ -33,12 +36,46 @@ export function useGameLogic() {
   const currentNote =
     firstUnansweredIndex >= 0 ? notes[firstUnansweredIndex].note : null;
 
-  // Sync keyboard octave to current note so staff and piano align
+  // Sync keyboard octave to current note so staff and piano align (game mode only)
   useEffect(() => {
-    if (currentNote && currentNote.octave >= 3 && currentNote.octave <= 5) {
+    if (!isPlayMode && currentNote && currentNote.octave >= 3 && currentNote.octave <= 5) {
       setKeyboardOctave(currentNote.octave as 3 | 4 | 5);
     }
-  }, [currentNote]);
+  }, [isPlayMode, currentNote]);
+
+  // Reset state when switching modes
+  useEffect(() => {
+    if (isPlayMode) {
+      setPlayedNotes([]);
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
+      setFeedback(null);
+      setFeedbackKey(null);
+    } else {
+      setNotes(
+        getRandomNotes(INITIAL_NOTE_COUNT).map((note) => ({ note, answered: false }))
+      );
+      setScore(0);
+      setStreak(0);
+      setFeedback(null);
+      setFeedbackKey(null);
+    }
+  }, [isPlayMode]);
+
+  const addPlayedNote = useCallback((noteName: string, keyId?: string) => {
+    if (!keyId) return;
+    const octave = parseInt(keyId.slice(-1), 10);
+    if (isNaN(octave) || octave < 3 || octave > 5) return;
+    const note = noteFromPiano(noteName, octave);
+    if (note) {
+      setPlayedNotes((prev) => {
+        const next = [...prev, { note, answered: true }];
+        return next.length > MAX_PLAY_NOTES ? next.slice(-MAX_PLAY_NOTES) : next;
+      });
+    }
+  }, []);
 
   const appendNote = useCallback(() => {
     setNotes((prev) => {
@@ -56,20 +93,20 @@ export function useGameLogic() {
       clearTimeout(timeoutRef.current);
       timeoutRef.current = null;
     }
-    setNotes(
-      getRandomNotes(INITIAL_NOTE_COUNT).map((note) => ({ note, answered: false }))
-    );
-    setScore(0);
-    setStreak(0);
-    setFeedback(null);
-    setFeedbackKey(null);
-  }, []);
-
-  useEffect(() => {
-    setNotes(
-      getRandomNotes(INITIAL_NOTE_COUNT).map((note) => ({ note, answered: false }))
-    );
-  }, []);
+    if (isPlayMode) {
+      setPlayedNotes([]);
+      setFeedback(null);
+      setFeedbackKey(null);
+    } else {
+      setNotes(
+        getRandomNotes(INITIAL_NOTE_COUNT).map((note) => ({ note, answered: false }))
+      );
+      setScore(0);
+      setStreak(0);
+      setFeedback(null);
+      setFeedbackKey(null);
+    }
+  }, [isPlayMode]);
 
   const checkAnswer = useCallback(
     (noteName: string, keyId?: string) => {
@@ -131,7 +168,7 @@ export function useGameLogic() {
     };
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (!currentNote || e.repeat) return;
+      if (e.repeat) return;
       if (e.key === 'Shift') return; // shift is for toggle only
 
       const baseKey = e.key.toLowerCase();
@@ -143,7 +180,12 @@ export function useGameLogic() {
         e.preventDefault();
         const keyId = `${mapped.noteName}${octave}`;
         playNote(mapped.note, octave);
-        checkAnswer(mapped.noteName, keyId);
+        if (isPlayMode) {
+          addPlayedNote(mapped.noteName, keyId);
+        } else {
+          if (!currentNote) return;
+          checkAnswer(mapped.noteName, keyId);
+        }
       }
     };
 
@@ -153,17 +195,21 @@ export function useGameLogic() {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [currentNote, checkAnswer, keyboardOctave]);
+  }, [isPlayMode, currentNote, checkAnswer, addPlayedNote, keyboardOctave]);
+
+  const displayNotes = isPlayMode ? playedNotes : notes;
+  const onKeyPress = isPlayMode ? addPlayedNote : checkAnswer;
 
   return {
-    notes,
+    notes: displayNotes,
     currentNote,
     score,
     streak,
-    feedback,
-    feedbackKey,
+    feedback: isPlayMode ? null : feedback,
+    feedbackKey: isPlayMode ? null : feedbackKey,
     keyboardOctave,
-    checkAnswer,
+    onKeyPress,
     startOver,
+    isPlayMode,
   };
 }

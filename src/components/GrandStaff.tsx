@@ -8,6 +8,8 @@ const BASS_CLEF = '\u{1D122}';
 
 interface GrandStaffProps {
   notes: StaffNote[];
+  /** When set, staff width is fixed to this many measures (for multi-staff layout) */
+  fixedMeasures?: number;
 }
 
 // Layout: left-to-right = brace | clef | time sig | bar | [measure: 4 notes] | bar | ...
@@ -149,12 +151,14 @@ function SingleNote({ note, x, isCurrent }: { note: Note; x: number; isCurrent?:
   );
 }
 
-export function GrandStaff({ notes }: GrandStaffProps) {
-  const measureCount = Math.ceil(notes.length / NOTES_PER_MEASURE) || 1;
+export function GrandStaff({ notes, fixedMeasures }: GrandStaffProps) {
+  const measureCount = fixedMeasures ?? (Math.ceil(notes.length / NOTES_PER_MEASURE) || 1);
   const lastBarX = getBarLineX(measureCount);
   const contentRight = notes.length > 0
     ? lastBarX + STAFF_EXTEND
-    : 400;
+    : fixedMeasures
+      ? getBarLineX(fixedMeasures) + STAFF_EXTEND
+      : 400;
   const viewBoxWidth = Math.max(500, contentRight);
   const staffRight = viewBoxWidth - 20;
 
@@ -164,13 +168,16 @@ export function GrandStaff({ notes }: GrandStaffProps) {
   }
 
   const svgHeight = 280;
-  const svgWidth = (viewBoxWidth / VIEWBOX_HEIGHT) * svgHeight;
-  const wrapperRef = useRef<HTMLDivElement>(null);
   const firstUnansweredIndex = notes.findIndex((n) => !n.answered);
+  const isFixedWidth = fixedMeasures != null;
+  const wrapperRef = useRef<HTMLDivElement>(null);
 
+  // Horizontal scroll only when staff extends beyond 4 measures (game mode, single staff)
   useEffect(() => {
+    if (isFixedWidth) return;
     const el = wrapperRef.current;
     if (!el || notes.length === 0) return;
+    const svgWidth = (viewBoxWidth / VIEWBOX_HEIGHT) * svgHeight;
     const scale = svgWidth / viewBoxWidth;
     if (firstUnansweredIndex >= 0) {
       const noteX = getNoteX(firstUnansweredIndex);
@@ -178,15 +185,22 @@ export function GrandStaff({ notes }: GrandStaffProps) {
     } else {
       el.scrollLeft = el.scrollWidth - el.clientWidth;
     }
-  }, [notes.length, firstUnansweredIndex, viewBoxWidth, svgWidth]);
+  }, [isFixedWidth, notes.length, firstUnansweredIndex, viewBoxWidth, svgHeight]);
 
   return (
-    <div className="grand-staff-wrapper" ref={wrapperRef}>
+    <div
+      className={`grand-staff-wrapper ${isFixedWidth ? 'fixed-width' : ''}`}
+      ref={wrapperRef}
+    >
       <svg
         viewBox={`0 0 ${viewBoxWidth} ${VIEWBOX_HEIGHT}`}
         className="grand-staff"
         preserveAspectRatio="xMinYMid meet"
-        style={{ width: svgWidth, height: svgHeight }}
+        style={
+          isFixedWidth
+            ? { width: '100%', height: 'auto' }
+            : { width: (viewBoxWidth / VIEWBOX_HEIGHT) * svgHeight, height: svgHeight }
+        }
       >
         {/* Treble staff lines - full width */}
         {[0, 1, 2, 3, 4].map((i) => (
